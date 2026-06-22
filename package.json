@@ -1,12 +1,12 @@
 {
-  "name": "scanner-demo-server",
-  "version": "1.0.0",
-  "description": "WebSocket broadcaster for scanner-demo",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "ws": "^8.13.0"
-  }
+    "name": "scanner-demo-server",
+    "version": "1.0.0",
+    "description": "WebSocket broadcaster for scanner-demo",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js"
+    },
+    "dependencies": {
+        "ws": "^8.13.0"
+    }
 }

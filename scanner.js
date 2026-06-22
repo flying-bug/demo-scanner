@@ -11,9 +11,22 @@
     let codeReader = null;
     let detectorLoop = false;
     let mediaStream = null;
+    // scan history helper (DOM queried when used)
+    function addHistoryEntry(code, source = 'local', product = null) {
+        try {
+            const list = document.getElementById('historyList');
+            if (!list) return;
+            const li = document.createElement('li');
+            const time = new Date().toLocaleTimeString();
+            const srcCls = source === 'local' ? 'source-local' : 'source-remote';
+            li.innerHTML = `<div style="flex:1"><div><span class="code">${code}</span> <span class="meta">• ${time}</span></div>${product ? `<div class="meta">${product.name || ''} ${product.price ? '— ' + product.price : ''}</div>` : ''}</div><div class="meta ${srcCls}">${source}</div>`;
+            list.insertBefore(li, list.firstChild);
+            while (list.children.length > 50) list.removeChild(list.lastChild);
+        } catch (e) { console.warn('history add failed', e); }
+    }
     // WebSocket for real-time sync (broadcast scans to other clients)
     let ws = null;
-    const WS_URL = (function(){ try { return location.protocol === 'https:' ? 'wss://' + location.hostname + ':8080' : 'ws://' + location.hostname + ':8080'; } catch(e) { return 'ws://localhost:8080'; } })();
+    const WS_URL = (function () { try { return location.protocol === 'https:' ? 'wss://' + location.hostname + ':8080' : 'ws://' + location.hostname + ':8080'; } catch (e) { return 'ws://localhost:8080'; } })();
     function initWebSocket() {
         try {
             ws = new WebSocket(WS_URL);
@@ -29,7 +42,9 @@
                         // show remote scan
                         setStatus('Nhận quét từ xa: ' + data.barcode);
                         if (data.product) displayProduct(data.product);
-                        else { input.value = data.barcode; input.classList.add('flash'); setTimeout(()=>input.classList.remove('flash'),200); }
+                        else { input.value = data.barcode; input.classList.add('flash'); setTimeout(() => input.classList.remove('flash'), 200); }
+                        // add to remote history
+                        try { addHistoryEntry(data.barcode, 'remote', data.product || null); } catch(e){}
                     }
                 } catch (e) { console.warn('[ws] bad message', e); }
             });
@@ -55,6 +70,8 @@
         setTimeout(() => input.classList.remove('flash'), 200);
         // Automatically lookup product when scanned
         lookupProduct(code);
+        // add to local history
+        try { addHistoryEntry(code, 'local', catalog[code] || null); } catch (e) {}
         // broadcast scan to other clients
         try {
             if (ws && ws.readyState === WebSocket.OPEN) {

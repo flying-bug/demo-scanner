@@ -21,9 +21,10 @@ video {
 
 input#barcodeInput {
     font-size: 18px;
-    padding: 8px;
+    padding: 12px;
     width: 100%;
-    box-sizing: border-box
+    box-sizing: border-box;
+    border-radius: 8px;
 }
 
 button {
@@ -68,7 +69,7 @@ main {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    align-items: stretch
+    align-items: stretch;
 }
 
 .video-wrapper {
@@ -103,6 +104,14 @@ video {
     border: 3px dashed rgba(255, 255, 255, 0.85);
     border-radius: 8px;
     box-shadow: 0 6px 18px rgba(2, 6, 23, 0.4) inset
+}
+
+/* Mobile-friendly adjustments */
+@media (max-width: 799px) {
+    button { padding: 14px 16px; font-size: 16px; border-radius: 10px }
+    .btn-row { flex-direction: column; gap: 10px }
+    .scan-area { width: 80%; max-width: 420px }
+    .product-info { font-size: 15px }
 }
 
 .controls {
@@ -194,6 +203,30 @@ button:disabled {
     background: #fff;
     border-radius: 8px;
     box-shadow: 0 6px 18px rgba(2, 6, 23, 0.06);
+}
+
+.scan-history {
+    margin-top: 12px;
+    padding: 10px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 6px 18px rgba(2,6,23,0.04);
+}
+.scan-history h3 { margin: 0 0 8px; font-size: 1rem }
+.scan-history ul { list-style: none; padding: 0; margin: 0; max-height: 220px; overflow-y: auto }
+.scan-history li { padding: 8px 10px; border-bottom: 1px solid #f1f1f1; display:flex; gap:8px; align-items:center }
+.scan-history .code { font-weight:600; color:#0f172a }
+.scan-history .meta { color:var(--muted); font-size:0.85rem }
+.scan-history .source-local { color: #0b84ff }
+.scan-history .source-remote { color: #10b981 }
+
+/* Desktop layout tweaks */
+@media (min-width: 800px) {
+    .scanner { flex-direction: row }
+    .video-wrapper { flex: 0 0 60%; max-width: 720px }
+    .controls { flex: 1; padding: 18px }
+    .btn-row { flex-direction: row }
+    .product-info { margin-top: 16px }
 }
 
 .product-info h2 {
