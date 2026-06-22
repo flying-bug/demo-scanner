@@ -6,11 +6,13 @@
     const submitBtn = document.getElementById('submitBtn');
     const startBtn = document.getElementById('startCamera');
     const stopBtn = document.getElementById('stopCamera');
+    const toggleBtn = document.getElementById('toggleCamera');
     const statusEl = document.getElementById('status');
 
     let codeReader = null;
     let detectorLoop = false;
     let mediaStream = null;
+    let currentFacing = 'environment'; // 'environment' or 'user'
     // scan history helper (DOM queried when used)
     function addHistoryEntry(code, source = 'local', product = null) {
         try {
@@ -141,8 +143,9 @@
                 try { devices = await codeReader.listVideoInputDevices(); } catch (e) { console.warn('listVideoInputDevices failed', e); }
 
                 if (devices && devices.length) {
-                    // Prefer rear-facing / environment camera when available
-                    const preferred = devices.find(d => /back|rear|environment/i.test(d.label));
+                    // Prefer device matching currentFacing when available
+                    const preferRE = currentFacing === 'environment' ? /back|rear|environment/i : /front|user|face|front camera/i;
+                    const preferred = devices.find(d => preferRE.test(d.label));
                     const selected = (preferred && preferred.deviceId) || (devices[devices.length - 1] && devices[devices.length - 1].deviceId) || devices[0].deviceId;
                     codeReader.decodeFromVideoDevice(selected, 'video', (result, err) => {
                         if (result) handleScanned(result.getText());
@@ -154,7 +157,8 @@
 
                 // fallback to getUserMedia + decodeFromVideoElement
                 if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                    mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                    // ask for the current facing mode
+                    mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: currentFacing } } });
                     video.srcObject = mediaStream; await video.play();
                     if (codeReader.decodeFromVideoElement) {
                         codeReader.decodeFromVideoElement(video, (result, err) => {
@@ -169,7 +173,7 @@
 
             // BarcodeDetector fallback
             if ('BarcodeDetector' in window && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: currentFacing } } });
                 video.srcObject = mediaStream; await video.play();
                 const detector = new BarcodeDetector();
                 const canvas = document.createElement('canvas');
@@ -208,6 +212,16 @@
 
     startBtn.addEventListener('click', (e) => { e.preventDefault(); console.log('[scanner] start button clicked'); setStatus('Bấm Bật camera...'); startCamera(); });
     stopBtn.addEventListener('click', (e) => { e.preventDefault(); console.log('[scanner] stop button clicked'); setStatus('Tắt camera...'); stopCamera(); });
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            currentFacing = currentFacing === 'environment' ? 'user' : 'environment';
+            setStatus('Chuyển camera sang: ' + currentFacing);
+            // restart camera with new facing mode
+            stopCamera();
+            startCamera();
+        });
+    }
 
     setStatus('Sẵn sàng — bấm "Bật camera"');
     console.log('[scanner] initialized');
