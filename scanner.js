@@ -141,7 +141,9 @@
                 try { devices = await codeReader.listVideoInputDevices(); } catch (e) { console.warn('listVideoInputDevices failed', e); }
 
                 if (devices && devices.length) {
-                    const selected = devices[0].deviceId;
+                    // Prefer rear-facing / environment camera when available
+                    const preferred = devices.find(d => /back|rear|environment/i.test(d.label));
+                    const selected = (preferred && preferred.deviceId) || (devices[devices.length - 1] && devices[devices.length - 1].deviceId) || devices[0].deviceId;
                     codeReader.decodeFromVideoDevice(selected, 'video', (result, err) => {
                         if (result) handleScanned(result.getText());
                         if (err && !(err instanceof ZXing.NotFoundException)) console.warn(err);
