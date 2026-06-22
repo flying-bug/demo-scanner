@@ -28,9 +28,22 @@
     }
     // WebSocket for real-time sync (broadcast scans to other clients)
     let ws = null;
-    const WS_URL = (function () { try { return location.protocol === 'https:' ? 'wss://' + location.hostname + ':8080' : 'ws://' + location.hostname + ':8080'; } catch (e) { return 'ws://localhost:8080'; } })();
+    // allow overriding websocket address via ?ws=ws://HOST:PORT when serving files to phone
+    const _params = (typeof URLSearchParams !== 'undefined' && location && location.search) ? new URLSearchParams(location.search) : null;
+    const WS_PARAM = _params ? _params.get('ws') : null;
+    const WS_URL = WS_PARAM || (function () {
+        try {
+            if (location.protocol === 'file:') return null; // cannot infer host when opened as file://
+            return location.protocol === 'https:' ? 'wss://' + location.hostname + ':8080' : 'ws://' + location.hostname + ':8080';
+        } catch (e) { return null; }
+    })();
     function initWebSocket() {
         try {
+            if (!WS_URL) {
+                setStatus('Không thể tự động xác định WebSocket — mở trang với `?ws=ws://<PC_IP>:8080`');
+                console.warn('[ws] no WS_URL available; provide ?ws=ws://HOST:PORT');
+                return;
+            }
             ws = new WebSocket(WS_URL);
             ws.addEventListener('open', () => console.log('[ws] connected', WS_URL));
             ws.addEventListener('close', () => {
