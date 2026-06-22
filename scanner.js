@@ -11,6 +11,32 @@
     let codeReader = null;
     let detectorLoop = false;
     let mediaStream = null;
+    // WebSocket for real-time sync (broadcast scans to other clients)
+    let ws = null;
+    const WS_URL = (function(){ try { return location.protocol === 'https:' ? 'wss://' + location.hostname + ':8080' : 'ws://' + location.hostname + ':8080'; } catch(e) { return 'ws://localhost:8080'; } })();
+    function initWebSocket() {
+        try {
+            ws = new WebSocket(WS_URL);
+            ws.addEventListener('open', () => console.log('[ws] connected', WS_URL));
+            ws.addEventListener('close', () => {
+                console.log('[ws] closed, reconnect in 2s');
+                setTimeout(initWebSocket, 2000);
+            });
+            ws.addEventListener('message', (ev) => {
+                try {
+                    const data = JSON.parse(ev.data);
+                    if (data && data.type === 'scan' && data.barcode) {
+                        // show remote scan
+                        setStatus('Nhận quét từ xa: ' + data.barcode);
+                        if (data.product) displayProduct(data.product);
+                        else { input.value = data.barcode; input.classList.add('flash'); setTimeout(()=>input.classList.remove('flash'),200); }
+                    }
+                } catch (e) { console.warn('[ws] bad message', e); }
+            });
+        } catch (e) { console.warn('[ws] init failed', e); }
+    }
+    // start websocket (best-effort)
+    initWebSocket();
 
     function setStatus(text) {
         if (statusEl) statusEl.textContent = text;
@@ -29,6 +55,13 @@
         setTimeout(() => input.classList.remove('flash'), 200);
         // Automatically lookup product when scanned
         lookupProduct(code);
+        // broadcast scan to other clients
+        try {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const p = catalog[code] || null;
+                ws.send(JSON.stringify({ type: 'scan', barcode: code, product: p }));
+            }
+        } catch (e) { console.warn('[ws] send failed', e); }
     }
 
     // Demo product catalog (replace with your API call if needed)
